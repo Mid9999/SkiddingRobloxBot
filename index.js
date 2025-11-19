@@ -585,7 +585,7 @@ client.on("messageCreate", async (msg) => {
                         embeds: [embed("Error", "Error adding")],
                     });
                 msg.author.send(
-                    `Generated to unchecked:\nUsername: ${username}\nPassword: ${password}`,
+                    `Generated! :\nUsername: ${username}\nPassword: ${password}`,
                 );
                 msg.reply({
                     embeds: [embed("Success", "Created Username/Password")],
