@@ -9,6 +9,8 @@ import {
 import fetch from "node-fetch";
 import sqlite3 from "sqlite3";
 import fs from "fs";
+import http from "http"; // Add this import for dummy server
+
 const db = new sqlite3.Database("roblox.db");
 db.run(`CREATE TABLE IF NOT EXISTS accounts(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,15 +72,15 @@ function delay(ms) {
 }
 // Generate short username/password
 function generateShortUP() {
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     const rand = (len) =>
         Array.from(
             { length: len },
             () => chars[Math.floor(Math.random() * chars.length)],
         ).join("");
     return {
-        username: "m1dgen" + rand(4), // short username
-        password: "m1dgen" + rand(6) + "A1!", // short password
+        username: rand(6), // short random username with letters and numbers
+        password: rand(8) + "A1!", // short random password with letters and numbers, plus fixed suffix for complexity
     };
 }
 // Rotating statuses array
@@ -213,12 +215,7 @@ client.on("messageCreate", async (msg) => {
         const whitelist = getWhitelist();
         if (!whitelist.includes(msg.author.id) && msg.author.id !== OWNER_ID) {
             return msg.reply({
-                embeds: [
-                    embed(
-                        "Error",
-                        "You are not authorized (Gen Managers only)",
-                    ),
-                ],
+                embeds: [embed("Error", "You are not authorized (Gen Managers only)")],
             });
         }
         const mentionedUser = msg.mentions.users.first();
@@ -267,12 +264,7 @@ client.on("messageCreate", async (msg) => {
         const whitelist = getWhitelist();
         if (!whitelist.includes(msg.author.id) && msg.author.id !== OWNER_ID) {
             return msg.reply({
-                embeds: [
-                    embed(
-                        "Error",
-                        "You are not authorized (Gen Managers only)",
-                    ),
-                ],
+                embeds: [embed("Error", "You are not authorized (Gen Managers only)")],
             });
         }
         const mentionedUser = msg.mentions.users.first();
@@ -308,12 +300,7 @@ client.on("messageCreate", async (msg) => {
         const whitelist = getWhitelist();
         if (!whitelist.includes(msg.author.id) && msg.author.id !== OWNER_ID) {
             return msg.reply({
-                embeds: [
-                    embed(
-                        "Error",
-                        "You are not authorized (Gen Managers only)",
-                    ),
-                ],
+                embeds: [embed("Error", "You are not authorized (Gen Managers only)")],
             });
         }
         db.run(`UPDATE users SET credits = 0`, (err) => {
@@ -323,7 +310,12 @@ client.on("messageCreate", async (msg) => {
                 });
             }
             msg.reply({
-                embeds: [embed("Success", "Reset all user credit data")],
+                embeds: [
+                    embed(
+                        "Success",
+                        "Reset all user credit data",
+                    ),
+                ],
             });
         });
     }
@@ -389,10 +381,7 @@ client.on("messageCreate", async (msg) => {
                                 });
                             }
                             // Animation
-                            const statusEmbed = embed(
-                                "Gamble",
-                                "Rolling the dice...",
-                            );
+                            const statusEmbed = embed("Gamble", "Rolling the dice...");
                             const statusMsg = await msg.reply({
                                 embeds: [statusEmbed],
                             });
@@ -421,13 +410,9 @@ client.on("messageCreate", async (msg) => {
                                         if (err) console.error(err);
                                     },
                                 );
-                                statusEmbed.setDescription(
-                                    "🎉 You won! +1 credit added.",
-                                );
+                                statusEmbed.setDescription("🎉 You won! +1 credit added.");
                             } else {
-                                statusEmbed.setDescription(
-                                    "😞 You lost. Better luck next time!",
-                                );
+                                statusEmbed.setDescription("😞 You lost. Better luck next time!");
                             }
                             await statusMsg.edit({ embeds: [statusEmbed] });
                         },
@@ -473,27 +458,18 @@ client.on("messageCreate", async (msg) => {
                                     ],
                                 });
                             }
-                            const statusEmbed = embed(
-                                "Daily Reward",
-                                "Claiming your daily credit...",
-                            );
+                            const statusEmbed = embed("Daily Reward", "Claiming your daily credit...");
                             const statusMsg = await msg.reply({
                                 embeds: [statusEmbed],
                             });
                             await delay(500);
-                            statusEmbed.setDescription(
-                                "Claiming your daily credit..",
-                            );
+                            statusEmbed.setDescription("Claiming your daily credit..");
                             await statusMsg.edit({ embeds: [statusEmbed] });
                             await delay(500);
-                            statusEmbed.setDescription(
-                                "Claiming your daily credit...",
-                            );
+                            statusEmbed.setDescription("Claiming your daily credit...");
                             await statusMsg.edit({ embeds: [statusEmbed] });
                             await delay(500);
-                            statusEmbed.setDescription(
-                                "🎉 Claimed! +1 credit added.",
-                            );
+                            statusEmbed.setDescription("🎉 Claimed! +1 credit added.");
                             await statusMsg.edit({ embeds: [statusEmbed] });
                         },
                     );
@@ -585,7 +561,7 @@ client.on("messageCreate", async (msg) => {
                         embeds: [embed("Error", "Error adding")],
                     });
                 msg.author.send(
-                    `Generated! :\nUsername: ${username}\nPassword: ${password}`,
+                    `Generated to unchecked:\nUsername: ${username}\nPassword: ${password}`,
                 );
                 msg.reply({
                     embeds: [embed("Success", "Created Username/Password")],
@@ -1010,19 +986,13 @@ client.on("messageCreate", async (msg) => {
             const details = await detailsRes.json();
 
             // Fetch additional info
-            const friendsCountRes = await fetch(
-                `https://friends.roblox.com/v1/users/${userId}/friends/count`,
-            );
+            const friendsCountRes = await fetch(`https://friends.roblox.com/v1/users/${userId}/friends/count`);
             const friendsCount = await friendsCountRes.json();
 
-            const followersCountRes = await fetch(
-                `https://friends.roblox.com/v1/users/${userId}/followers/count`,
-            );
+            const followersCountRes = await fetch(`https://friends.roblox.com/v1/users/${userId}/followers/count`);
             const followersCount = await followersCountRes.json();
 
-            const followingsCountRes = await fetch(
-                `https://friends.roblox.com/v1/users/${userId}/followings/count`,
-            );
+            const followingsCountRes = await fetch(`https://friends.roblox.com/v1/users/${userId}/followings/count`);
             const followingsCount = await followingsCountRes.json();
 
             const presenceRes = await fetch(
@@ -1036,16 +1006,19 @@ client.on("messageCreate", async (msg) => {
             const presenceData = await presenceRes.json();
             const presence = presenceData.userPresences[0];
 
-            const thumbnailRes = await fetch(
-                `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png`,
-            );
+            const thumbnailRes = await fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png`);
             const thumbnailData = await thumbnailRes.json();
             const thumbnailUrl = thumbnailData.data[0].imageUrl;
 
-            let info = `Username: ${details.name}\nDisplay Name: ${details.displayName}\nDescription: ${details.description}\nCreated: ${details.created}\nID: ${userId}\nBanned: ${details.isBanned ? "Yes" : "No"}\nVerified Badge: ${details.hasVerifiedBadge ? "Yes" : "No"}\nFriends: ${friendsCount.count}\nFollowers: ${followersCount.count}\nFollowing: ${followingsCount.count}\nLast Online: ${presence.lastOnline || "Unknown"}\nPresence: ${presence.userPresenceType === 0 ? "Offline" : presence.userPresenceType === 1 ? "Online" : presence.userPresenceType === 2 ? "In Game" : "In Studio"}\nHeadshot: ${thumbnailUrl}`;
+            let info = `Username: ${details.name}\nDisplay Name: ${details.displayName}\nDescription: ${details.description}\nCreated: ${details.created}\nID: ${userId}\nBanned: ${details.isBanned ? 'Yes' : 'No'}\nVerified Badge: ${details.hasVerifiedBadge ? 'Yes' : 'No'}\nFriends: ${friendsCount.count}\nFollowers: ${followersCount.count}\nFollowing: ${followingsCount.count}\nLast Online: ${presence.lastOnline || 'Unknown'}\nPresence: ${presence.userPresenceType === 0 ? 'Offline' : presence.userPresenceType === 1 ? 'Online' : presence.userPresenceType === 2 ? 'In Game' : 'In Studio'}\nHeadshot: ${thumbnailUrl}`;
 
             msg.reply({
-                embeds: [embed("Roblox User", info)],
+                embeds: [
+                    embed(
+                        "Roblox User",
+                        info,
+                    ),
+                ],
             });
         } catch (err) {
             console.error(err);
@@ -1108,3 +1081,10 @@ client.on("messageCreate", async (msg) => {
     }
 });
 client.login(process.env.DISCORD_TOKEN);
+
+// Add dummy HTTP server to bind to a port for Render deployment
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Discord bot is running\n');
+}).listen(process.env.PORT || 3000);
+console.log(`Dummy server listening on port ${process.env.PORT || 3000}`);
